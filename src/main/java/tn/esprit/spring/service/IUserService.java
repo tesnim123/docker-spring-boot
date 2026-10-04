@@ -1,11 +1,14 @@
 package tn.esprit.spring.service;
 
-import java.util.List;
+import tn.esprit.spring.entities.User;
 
+public interface IUserService {
 
+    User addUser(User u);
 
-public interface IUserService { 
-	 
-	
-} 
- 
+    User retrieveUser(Long id);
+
+    User updateUser(User u);
+
+    void deleteUser(Long id);
+}
