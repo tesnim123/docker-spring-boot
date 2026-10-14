@@ -10,6 +10,7 @@ pipeline {
         pollSCM('H/2 * * * *')
     }
 
+
     environment {
         registry = "tesnim123/docker-spring-boot"
         registryCredential = 'dockerHub'

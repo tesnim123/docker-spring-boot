@@ -25,6 +25,7 @@ import tn.esprit.spring.service.IUserService;
 @ExtendWith(MockitoExtension.class)
 class UserRestControlImplTest {
 
+
     @Mock
     IUserService userService;
 
