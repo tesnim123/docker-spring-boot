@@ -21,7 +21,11 @@
 	</properties>
 
 	<dependencies>
-
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -145,7 +149,7 @@
     <repository>
         <id>deploymentRepo</id>
         <name>Nexus Repository Releases</name>
-        <url>http://localhost:8081/repository/maven-releases/</url>
+		<url>http://localhost:8081/repository/docker-spring-boot-releases/</url>
     </repository>
     <snapshotRepository>
         <id>deploymentRepo</id>
