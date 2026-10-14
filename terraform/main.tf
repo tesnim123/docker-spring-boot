@@ -1,93 +1,68 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 provider "aws" {
   region = var.aws_region
 }
 
-resource "aws_vpc" "my_vpc" {
-  cidr_block = var.vpc_cidr  # Utilisation de la variable pour le CIDR
+# Le VPC par défaut du compte Learner Lab
+data "aws_vpc" "default" {
+  default = true
 }
 
-resource "aws_security_group" "eks_cluster_sg" {
-  name        = "eks-cluster-sg-${var.cluster_name}"
-  description = "Security group for EKS cluster ${var.cluster_name}"
-  vpc_id      = var.vpc_id  # Utilisation de la variable pour l'ID du VPC
-
-  ingress {
-    from_port   = 8083
-    to_port     = 8083
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+# Sous-réseaux du VPC par défaut (la zone 1e ne supporte pas EKS)
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
   }
 
-  ingress {
-    from_port   = 30000
-    to_port     = 30000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "eks-cluster-sg-${var.cluster_name}"
+  filter {
+    name   = "availability-zone"
+    values = ["${var.aws_region}a", "${var.aws_region}b", "${var.aws_region}c"]
   }
 }
 
-resource "aws_security_group" "eks_worker_sg" {
-  name        = "eks-worker-sg-${var.cluster_name}"
-  description = "Security group for EKS worker nodes ${var.cluster_name}"
-  vpc_id      = var.vpc_id  # Utilisation de la variable pour l'ID du VPC
-
-  ingress {
-    from_port   = 8083
-    to_port     = 8083
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 30000
-    to_port     = 30000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "eks-worker-sg-${var.cluster_name}"
-  }
+# Rôle IAM existant dans Learner Lab
+data "aws_iam_role" "lab_role" {
+  name = "LabRole"
 }
 
 resource "aws_eks_cluster" "my_cluster" {
   name     = var.cluster_name
-  role_arn = var.role_arn
-  version  = "1.30"
+  role_arn = data.aws_iam_role.lab_role.arn
 
   vpc_config {
-    subnet_ids         = var.subnet_ids
-    security_group_ids = [aws_security_group.eks_cluster_sg.id]
+    subnet_ids = data.aws_subnets.default.ids
   }
 }
 
 resource "aws_eks_node_group" "my_node_group" {
   cluster_name    = aws_eks_cluster.my_cluster.name
   node_group_name = "noeud1"
-  node_role_arn   = var.role_arn
-  subnet_ids      = var.subnet_ids
+  node_role_arn   = data.aws_iam_role.lab_role.arn
+  subnet_ids      = data.aws_subnets.default.ids
+  instance_types  = [var.node_instance_type]
 
   scaling_config {
     desired_size = 2
     max_size     = 3
     min_size     = 1
   }
+}
+
+# Ouvrir le NodePort 30000 sur le groupe de sécurité que EKS applique aux noeuds
+resource "aws_security_group_rule" "nodeport" {
+  type              = "ingress"
+  from_port         = 30000
+  to_port           = 30000
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_eks_cluster.my_cluster.vpc_config[0].cluster_security_group_id
 }

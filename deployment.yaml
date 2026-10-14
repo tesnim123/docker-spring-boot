@@ -5,7 +5,7 @@ metadata:
   labels:
     app: my-spring-boot-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: my-spring-boot-app
@@ -15,7 +15,19 @@ spec:
         app: my-spring-boot-app
     spec:
       containers:
-      - name: my-spring-boot-app
-        image: thourayalouati/docker-spring-boot:latest  # Assurez-vous que le nom est correct
-        ports:
-        - containerPort: 8083  # Utilisez le port sur lequel votre application écoute
+        - name: my-spring-boot-app
+          image: tesnim123/docker-spring-boot:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8083
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:h2:mem:tpachat;DB_CLOSE_DELAY=-1"
+            - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+              value: "org.h2.Driver"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "sa"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: ""
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: "update"
